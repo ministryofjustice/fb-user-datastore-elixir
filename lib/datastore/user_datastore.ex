@@ -8,34 +8,28 @@ defmodule Datastore.UserDatastore do
 
   alias Datastore.UserDatastore.UserData
 
-  @doc """
-  Returns the list of user_data.
-
-  ## Examples
-
-      iex> list_user_data()
-      [%UserData{}, ...]
-
-  """
-  def list_user_data do
-    Repo.all(UserData)
+  def store_size do
+    Repo.aggregate(UserData, :count)
   end
 
-  @doc """
-  Gets a single user_data.
+  def get_user_data(user_identifier, service_slug) do
+    Repo.get_by(
+      UserData,
+      user_identifier: user_identifier,
+      service_slug: service_slug
+    )
+  end
 
-  Raises `Ecto.NoResultsError` if the User data does not exist.
+  def create_or_update(attrs \\ %{}) do
+    user_data = if attrs[:user_identifier] && attrs[:service_slug] do
+      get_user_data(attrs[:user_identifier], attrs[:service_slug])
+    end
 
-  ## Examples
-
-      iex> get_user_data!(123)
-      %UserData{}
-
-      iex> get_user_data!(456)
-      ** (Ecto.NoResultsError)
-
-  """
-  def get_user_data!(id), do: Repo.get!(UserData, id)
+    case user_data do
+      nil -> create_user_data(attrs)
+      user_data -> update_user_data(user_data, attrs)
+    end
+  end
 
   @doc """
   Creates a user_data.
@@ -71,22 +65,6 @@ defmodule Datastore.UserDatastore do
     user_data
     |> UserData.changeset(attrs)
     |> Repo.update()
-  end
-
-  @doc """
-  Deletes a user_data.
-
-  ## Examples
-
-      iex> delete_user_data(user_data)
-      {:ok, %UserData{}}
-
-      iex> delete_user_data(user_data)
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def delete_user_data(%UserData{} = user_data) do
-    Repo.delete(user_data)
   end
 
   @doc """

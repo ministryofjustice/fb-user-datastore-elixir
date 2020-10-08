@@ -7,6 +7,9 @@ defmodule DatastoreWeb.Router do
 
   scope "/api", DatastoreWeb do
     pipe_through :api
+
+    post "/service/:service_slug/user/:user_identifier", UserDataController, :create_or_update, as: :create_or_update_user_data
+    get "/service/:service_slug/user/:user_identifier", UserDataController, :show, as: :user_data
   end
 
   # Enables LiveDashboard only for development

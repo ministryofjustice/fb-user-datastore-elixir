@@ -8,7 +8,7 @@ defmodule Datastore.Repo.Migrations.CreateUserData do
       add :payload, :string
       add :service_slug, :string
 
-      timestamps()
+      timestamps(inserted_at: :created_at)
     end
 
     create unique_index(

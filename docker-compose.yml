@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  datastore-db:
+    image: postgres:10.9-alpine
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: datastore_local
+
+  datastore-app:
+    container_name: datastore-app
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 9000:4000
+    links:
+      - datastore-db
+    environment:
+      DATABASE_URL: postgres://postgres:password@datastore-db/datastore_local
+      SECRET_KEY_BASE: key-base
+      MIX_ENV: prod

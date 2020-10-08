@@ -3,70 +3,59 @@ defmodule Datastore.UserDatastoreTest do
 
   alias Datastore.UserDatastore
 
-  describe "user_data" do
+  @valid_attrs %{
+    payload: "some payload",
+    service_slug: "cica",
+    user_identifier: "7488a646-e31f-11e4-aace-600308960662"
+  }
+  @invalid_attrs %{payload: nil, service_slug: nil, user_identifier: nil}
+
+  def user_data_fixture(attrs \\ %{}) do
+    { :ok, user_data } =
+      attrs
+      |> Enum.into(@valid_attrs)
+      |> UserDatastore.create_user_data()
+
+    user_data
+  end
+
+  describe "create_or_update" do
     alias Datastore.UserDatastore.UserData
 
-    @valid_attrs %{created_at: ~N[2010-04-17 14:00:00], payload: "some payload", service_slug: "some service_slug", updated_at: ~N[2010-04-17 14:00:00], user_identifier: "7488a646-e31f-11e4-aace-600308960662"}
-    @update_attrs %{created_at: ~N[2011-05-18 15:01:01], payload: "some updated payload", service_slug: "some updated service_slug", updated_at: ~N[2011-05-18 15:01:01], user_identifier: "7488a646-e31f-11e4-aace-600308960668"}
-    @invalid_attrs %{created_at: nil, payload: nil, service_slug: nil, updated_at: nil, user_identifier: nil}
-
-    def user_data_fixture(attrs \\ %{}) do
-      {:ok, user_data} =
-        attrs
-        |> Enum.into(@valid_attrs)
-        |> UserDatastore.create_user_data()
-
-      user_data
-    end
-
-    test "list_user_data/0 returns all user_data" do
-      user_data = user_data_fixture()
-      assert UserDatastore.list_user_data() == [user_data]
-    end
-
-    test "get_user_data!/1 returns the user_data with given id" do
-      user_data = user_data_fixture()
-      assert UserDatastore.get_user_data!(user_data.id) == user_data
-    end
-
-    test "create_user_data/1 with valid data creates a user_data" do
-      assert {:ok, %UserData{} = user_data} = UserDatastore.create_user_data(@valid_attrs)
-      assert user_data.created_at == ~N[2010-04-17 14:00:00]
+    test "create data when valid and do not exist" do
+      assert {:ok, %UserData{} = user_data } = UserDatastore.create_or_update(@valid_attrs)
       assert user_data.payload == "some payload"
-      assert user_data.service_slug == "some service_slug"
-      assert user_data.updated_at == ~N[2010-04-17 14:00:00]
+      assert user_data.service_slug == "cica"
       assert user_data.user_identifier == "7488a646-e31f-11e4-aace-600308960662"
     end
 
-    test "create_user_data/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = UserDatastore.create_user_data(@invalid_attrs)
+    test "update data when valid and does exist" do
+      assert UserDatastore.store_size() == 0
+      user_data = user_data_fixture()
+      assert user_data.__meta__.state == :loaded
+      assert UserDatastore.store_size() == 1
+      UserDatastore.create_or_update(%{
+        user_identifier: user_data.user_identifier,
+        service_slug: user_data.service_slug,
+        payload: "updated payload"
+      })
+      assert UserDatastore.store_size() == 1
+      assert UserDatastore.get_user_data(
+        user_data.user_identifier,
+        user_data.service_slug
+      ) == %Datastore.UserDatastore.UserData{
+        id: user_data.id,
+        payload: "updated payload",
+        service_slug: "cica",
+        user_identifier: user_data.user_identifier,
+        created_at: user_data.created_at,
+        updated_at: user_data.updated_at,
+        __meta__: user_data.__meta__
+      }
     end
 
-    test "update_user_data/2 with valid data updates the user_data" do
-      user_data = user_data_fixture()
-      assert {:ok, %UserData{} = user_data} = UserDatastore.update_user_data(user_data, @update_attrs)
-      assert user_data.created_at == ~N[2011-05-18 15:01:01]
-      assert user_data.payload == "some updated payload"
-      assert user_data.service_slug == "some updated service_slug"
-      assert user_data.updated_at == ~N[2011-05-18 15:01:01]
-      assert user_data.user_identifier == "7488a646-e31f-11e4-aace-600308960668"
-    end
-
-    test "update_user_data/2 with invalid data returns error changeset" do
-      user_data = user_data_fixture()
-      assert {:error, %Ecto.Changeset{}} = UserDatastore.update_user_data(user_data, @invalid_attrs)
-      assert user_data == UserDatastore.get_user_data!(user_data.id)
-    end
-
-    test "delete_user_data/1 deletes the user_data" do
-      user_data = user_data_fixture()
-      assert {:ok, %UserData{}} = UserDatastore.delete_user_data(user_data)
-      assert_raise Ecto.NoResultsError, fn -> UserDatastore.get_user_data!(user_data.id) end
-    end
-
-    test "change_user_data/1 returns a user_data changeset" do
-      user_data = user_data_fixture()
-      assert %Ecto.Changeset{} = UserDatastore.change_user_data(user_data)
+    test "returns error when invalid data" do
+      assert {:error, %Ecto.Changeset{}} = UserDatastore.create_or_update(@invalid_attrs)
     end
   end
 end

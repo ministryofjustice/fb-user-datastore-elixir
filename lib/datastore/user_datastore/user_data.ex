@@ -9,7 +9,7 @@ defmodule Datastore.UserDatastore.UserData do
     field :service_slug, :string
     field :user_identifier, Ecto.UUID
 
-    timestamps()
+    timestamps(inserted_at: :created_at)
   end
 
   @doc false
