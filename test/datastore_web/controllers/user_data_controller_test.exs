@@ -25,13 +25,56 @@ defmodule DatastoreWeb.UserDataControllerTest do
   end
 
   describe "post /service/:service_slug/user/:user_identifier" do
-    test 'when valid creates the user data' do
+    test 'when valid creates the user data', %{conn: conn} do
+      conn = post(
+        conn,
+        Routes.create_or_update_user_data_path(
+          conn,
+          :create_or_update,
+          @create_attrs[:service_slug],
+          @create_attrs[:user_identifier]
+        ),
+        user_data: @create_attrs
+      )
+
+      response = json_response(conn, 201)
+      assert response["user_id"] == @create_attrs[:user_identifier]
+      assert response["service_slug"] == @create_attrs[:service_slug]
+      assert response["payload"] == @create_attrs[:payload]
+      assert response["timestamp"]
     end
 
-    test 'when valid and exists updates the user data' do
+    test 'when valid and exists updates the user data', %{conn: conn} do
+      user_data = fixture(:user_data)
+      conn = post(
+        conn,
+        Routes.create_or_update_user_data_path(
+          conn,
+          :create_or_update,
+          user_data.service_slug,
+          user_data.user_identifier
+        ),
+        user_data: %{
+          payload: "updated_encrypted_payload"
+        }
+      )
+
+      response = json_response(conn, 200)
+      assert response["payload"] == "updated_encrypted_payload"
     end
 
-    test 'when invalid the user data' do
+    test 'when invalid the user data', %{conn: conn} do
+      conn = post(
+        conn,
+        Routes.create_or_update_user_data_path(
+          conn,
+          :create_or_update,
+          "a",
+          "b"
+        ),
+        user_data: @invalid_attrs
+      )
+      assert json_response(conn, 404)
     end
   end
 
